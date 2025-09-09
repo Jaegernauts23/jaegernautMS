@@ -45,6 +45,6 @@ deploy:
         docker rm myapp || true;
         docker run -d --name myapp -p 80:8080 rambhargav017/myapp:latest
       '
-environment:
-  name: production
+  environment:
+    name: production
 
