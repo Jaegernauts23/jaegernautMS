@@ -1,0 +1,27 @@
+stages:
+  - build
+  - dockerize
+
+variables:
+  IMAGE_TAG: latest
+  DOCKER_IMAGE: rambhargav017/myapp
+
+build:
+  stage: build
+  image: eclipse-temurin:21-jdk
+  script:
+    - ./gradlew clean build -x test
+  artifacts:
+    paths:
+      - build/libs/
+    expire_in: 1h
+
+dockerize:
+  stage: dockerize
+  image: docker:latest
+  services: 
+    - docker:dind
+  script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+    - docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
+    - docker push $DOCKER_IMAGE:$IMAGE_TAG
