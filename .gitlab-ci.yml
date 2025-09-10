@@ -6,6 +6,7 @@ stages:
 variables:
   IMAGE_TAG: latest
   DOCKER_IMAGE: rambhargav017/myapp
+  EC2_HOST: ec2-16-171-150-63.eu-north-1.compute.amazonaws.com
 
 build:
   stage: build
@@ -34,17 +35,24 @@ deploy:
   only:
     - master
   before_script:
-    - apk add --no-cache openssh
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $EC2_PUBLIC_IP >> ~/.ssh/known_hosts
   script:
-    - echo "$SSH_PRIVATE_KEY" > key.pem
-    - chmod 600 key.pem
-    - ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@<EC2_PUBLIC_IP> '
-        docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD";
-        docker pull rambhargav017/myapp:latest;
-        docker stop myapp || true;
-        docker rm myapp || true;
-        docker run -d --name myapp -p 80:8080 rambhargav017/myapp:latest
-      '
+      # Ensure target directory exists
+    - ssh -i ~/.ssh/id_rsa ubuntu@$EC2_HOST "mkdir -p /home/ubuntu/app"
+    - scp -i ~/.ssh/id_rsa docker-compose.yml ubuntu@$EC2_HOST:/home/ubuntu/app/docker-compose.yml
+    - ssh -i ~/.ssh/id_rsa ubuntu@$EC2_HOST "
+        cd /home/ubuntu/app &&
+        echo '>> Logging in to Docker Hub...' &&
+        echo '$DOCKER_PASSWORD' | docker login -u '$DOCKER_USER' --password-stdin &&
+        echo '>> Pulling latest image...' &&
+        docker compose pull &&
+        echo '>> Restarting app...' &&
+        docker compose up -d
+      "
   environment:
     name: production
 
