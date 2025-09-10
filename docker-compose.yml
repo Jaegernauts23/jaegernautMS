@@ -14,7 +14,7 @@ services:
       - db_data:/var/lib/mysql
 
   app:
-    image: myappimg
+    image: rambhargav017/myapp:latest
     container_name: myapp
     depends_on:
       - db
