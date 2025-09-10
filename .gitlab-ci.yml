@@ -50,7 +50,7 @@ deploy:
         echo '$DOCKER_PASSWORD' | docker login -u '$DOCKER_USER' --password-stdin &&
         echo '>> Pulling latest image...' &&
         docker compose pull &&
-        echo '>> Restarting app....' &&
+        echo '>> Restarting app...' &&
         docker compose up -d
       "
   environment:
