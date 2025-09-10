@@ -39,7 +39,7 @@ deploy:
     - mkdir -p ~/.ssh
     - echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan -H $EC2_PUBLIC_IP >> ~/.ssh/known_hosts
+    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
   script:
       # Ensure target directory exists
     - ssh -i ~/.ssh/id_rsa ubuntu@$EC2_HOST "mkdir -p /home/ubuntu/app"
