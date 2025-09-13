@@ -30,7 +30,7 @@ public class MainController {
     public String showHome(@RequestParam("username") String username,
                            @RequestParam("password") String password,
                            Model model) {
-        logger.info("class {} :: request type {} :: path {}",this.getClass().toString(),"post","/home");
+        logger.info("class testmeinlogofprod {} :: request type {} :: path {}",this.getClass().toString(),"post","/home");
         UserEntity user = userRepository.findByUsernameAndPassword(username, password);
         if (user != null) {
             model.addAttribute("username", user.getUsername());
