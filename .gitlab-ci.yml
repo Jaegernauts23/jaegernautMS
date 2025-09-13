@@ -6,7 +6,7 @@ stages:
 variables:
   IMAGE_TAG: latest
   DOCKER_IMAGE: rambhargav017/myapp
-  EC2_HOST: ec2-13-53-134-236.eu-north-1.compute.amazonaws.com
+  EC2_HOST: ec2-13-49-244-69.eu-north-1.compute.amazonaws.com
 
 build:
   stage: build
