@@ -48,6 +48,8 @@ deploy:
         cd /home/ubuntu/app &&
         echo '>> Logging in to Docker Hub...' &&
         echo '$DOCKER_PASSWORD' | docker login -u '$DOCKER_USER' --password-stdin &&
+        echo '>> Stopping containers...' &&
+        docker compose down &&
         echo '>> Pulling latest image...' &&
         docker compose pull &&
         echo '>> Restarting app...' &&
