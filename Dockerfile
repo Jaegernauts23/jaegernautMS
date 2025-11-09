@@ -1,5 +1,6 @@
 # Use a lightweight JDK
-FROM openjdk:21-jdk-slim
+FROM amazoncorretto:21-alpine
+
 
 # Set working directory inside container
 WORKDIR /app

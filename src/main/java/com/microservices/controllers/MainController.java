@@ -1,5 +1,7 @@
 package com.microservices.controllers;
 
+import com.microservices.services.OAuthAuthorizationService;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,9 @@ public class MainController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private OAuthAuthorizationService oAuthService;
+
     @GetMapping("/")
     public String showPasswordPage() {
         logger.info("class {} :: request type {} :: path {}",this.getClass().toString(),"get","/");
@@ -27,12 +32,31 @@ public class MainController {
     }
 
     @PostMapping("/home")
-    public String showHome(@RequestParam("username") String username,
-                           @RequestParam("password") String password,
-                           Model model) {
-        logger.info("class testmeinlogofprod {} :: request type {} :: path {}",this.getClass().toString(),"post","/home");
+    public String showHomeAfterLogin(@RequestParam("username") String username,
+                                     @RequestParam("password") String password,
+                                     Model model, HttpSession session) {
         UserEntity user = userRepository.findByUsernameAndPassword(username, password);
         if (user != null) {
+            // Check if this is OAuth flow
+            Boolean isOAuthAttempt = (Boolean) session.getAttribute("oauth_login_attempt");
+
+            if (isOAuthAttempt != null && isOAuthAttempt) {
+                // OAuth flow - generate code and redirect
+                String clientId = (String) session.getAttribute("oauth_client_id");
+                String redirectUri = (String) session.getAttribute("oauth_redirect_uri");
+                String scope = (String) session.getAttribute("oauth_scope");
+
+
+                String code = oAuthService.saveCode(clientId, scope, redirectUri,username);
+
+                // Clear OAuth session
+                session.removeAttribute("oauth_client_id");
+                session.removeAttribute("oauth_redirect_uri");
+                session.removeAttribute("oauth_scope");
+                session.removeAttribute("oauth_login_attempt");
+
+                return "redirect:" + redirectUri + "?code=" + code;
+            }
             model.addAttribute("username", user.getUsername());
             return "Dashboardscreen";
         } else {
@@ -42,10 +66,10 @@ public class MainController {
     }
 
     @PostMapping("/addUser")
-    public String showUser(@RequestParam("username") String username,
+    public String showAddUser(@RequestParam("username") String username,
                            @RequestParam("password") String password,
                            Model model) {
-        logger.info("class {} :: request type {} :: path {}",this.getClass().toString(),"post","/addUser");
+
         UserEntity user = userRepository.findByUsername(username);
 
         if (user == null) {
