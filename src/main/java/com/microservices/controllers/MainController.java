@@ -26,8 +26,16 @@ public class MainController {
     private OAuthAuthorizationService oAuthService;
 
     @GetMapping("/")
-    public String showPasswordPage() {
+    public String showPasswordPage(HttpSession session,Model model) {
         logger.info("class {} :: request type {} :: path {}",this.getClass().toString(),"get","/");
+
+        // Check if user is already logged in via passkey
+        String username = (String) session.getAttribute("username");
+        if (username != null) {
+            model.addAttribute("username", username);
+            return "Dashboardscreen";  // Show dashboard if logged in
+        }
+
         return "passwordscreen";
     }
 
@@ -75,8 +83,6 @@ public class MainController {
         if (user == null) {
             model.addAttribute("username", username);
             UserEntity newUser = new UserEntity();
-            newUser.setUsername(username);
-            newUser.setPassword(password);
             userRepository.save(newUser);
             return "Dashboardscreen";
         } else {
