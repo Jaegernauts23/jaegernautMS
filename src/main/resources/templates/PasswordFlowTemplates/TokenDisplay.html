@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Successful</title>
+</head>
+<body>
+<h2>Login Successful!</h2>
+<p>Your JWT Token:</p>
+<textarea readonly style="width:100%; height:100px;" th:text="${token}"></textarea>
+<br><br>
+<form action="/secret" method="get">
+    <input type="hidden" name="token" th:value="${token}">
+    <button type="submit">Access Protected Resource</button>
+</form>
+</body>
+</html>
