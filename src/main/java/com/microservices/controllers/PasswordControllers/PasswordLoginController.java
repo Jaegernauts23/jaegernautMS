@@ -44,7 +44,7 @@ public class PasswordLoginController {
             model.addAttribute("token", token);
             return "JWTTemplates/TokenDisplay";
         }
-        model.addAttribute("error", "Invalid credentials or email format");
+        model.addAttribute("error", "Invalid credentials");
         return "PasswordFlowTemplates/PasswordLogin";
     }
 }

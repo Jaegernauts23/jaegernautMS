@@ -2,6 +2,8 @@ package com.microservices.models.DAO;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
@@ -12,8 +14,8 @@ public class PasswordLoginDAO {
 
     @Id
     Long id;
-    @Pattern(regexp = "^[a-zA-Z0-9]{5,15}$",
-            message = "Username must be 5-15 characters and alphanumeric")
+    @NotBlank(message = "Email cannot be empty")
+    @Email(message = "Invalid email format")
     String email;
     String password;
 }
