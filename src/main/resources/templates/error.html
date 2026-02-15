@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>something went wrong dear, showing error page</title>
+    <title>Error</title>
 </head>
 <body>
-
+<h2 style="color:red;">Error Occurred</h2>
+<p th:if="${error}" th:text="${error}"></p>
+<p th:unless="${error}">Something went wrong</p>
+<br>
+<a href="/"><button>Go to Home</button></a>
 </body>
 </html>
