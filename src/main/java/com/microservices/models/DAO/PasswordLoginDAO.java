@@ -1,6 +1,8 @@
 package com.microservices.models.DAO;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -13,6 +15,7 @@ import lombok.Data;
 public class PasswordLoginDAO {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     @NotBlank(message = "Email cannot be empty")
     @Email(message = "Invalid email format")
