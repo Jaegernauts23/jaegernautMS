@@ -104,41 +104,6 @@ bash buildScript.sh -> windows bash
 3. **Login:** Use either `/password/login` or `/passkey/login`
 4. **Access Protected Resources:** JWT token stored in session
 
-## Passkey Authentication Flows
-
-### Passkey Registration Flow (FIDO2/WebAuthn)
-
-1. User creates account via password signup at `/password/signup`, creating entries in UserDetailsDAO and PasswordLoginDAO
-2. User navigates to `/passkey/register` page to add passkey as optional authentication method
-3. User enters email (must match existing account) and optional authenticator name
-4. Frontend calls POST `/passkey/register/start` with email
-5. Server verifies user exists in UserDetailsDAO, generates unique userHandle from email, creates PublicKeyCredentialCreationOptions containing challenge, RP ID (localhost), user info, and cryptographic parameters (ES256/RS256 algorithms)
-6. Server stores challenge in memory map keyed by email and returns options to frontend
-7. Frontend receives options, converts base64url challenge and userHandle to Uint8Array format
-8. Frontend invokes `navigator.credentials.create()` with converted options
-9. Browser prompts user for biometric enrollment (fingerprint/face) or device PIN setup
-10. Authenticator generates new public-private key pair in device's secure enclave, creates attestation object containing public key, credential ID, and authenticator metadata
-11. Authenticator returns credential containing rawId, response.clientDataJSON, response.attestationObject to frontend
-12. Frontend sends credential JSON to POST `/passkey/register/finish` with email and authenticator name
-13. Server retrieves stored challenge, verifies attestation signature, extracts public key and credential ID from attestation object
-14. Server creates PasskeyCredentialDAO entry storing email, credentialId (base64), publicKey (base64), signatureCount (0), authenticatorName, and saves to database
-15. Server removes challenge from memory map and returns success
-16. User can now login with either password or passkey, multiple passkeys allowed per user
-
-### Passkey Login Flow (FIDO2/WebAuthn)
-
-1. User navigates to `/passkey/login` page
-2. User clicks "Login with Passkey" button
-3. Frontend calls POST `/passkey/login/start`
-4. Server generates cryptographic challenge using Yubico's RelyingParty and returns PublicKeyCredentialRequestOptions containing challenge, RP ID, timeout, and allowed credentials
-5. Frontend receives challenge and invokes `navigator.credentials.get()` with the options
-6. Browser prompts user for biometric authentication (fingerprint/face) or device PIN
-7. Authenticator (device's secure enclave) retrieves private key associated with the credential
-8. Authenticator signs the challenge with private key and returns signed assertion containing authenticatorData, clientDataJSON, signature, and credentialId
-9. Frontend sends signed credential to POST `/passkey/login/finish`
-10. Server verifies signature using stored public key from PasskeyCredentialDAO, validates challenge matches, checks signature counter to prevent replay attacks
-11. If verification succeeds, server extracts user email from credential, generates JWT token, stores in session, and returns success
-12. User is authenticated and redirected to protected resources
 
 ## Technology Stack
 - Spring Boot 3.3.3
