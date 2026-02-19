@@ -65,15 +65,21 @@ export SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQLDialect
 export SPRING_JPA_HIBERNATE_DDL_AUTO=update
 ```
 
+compile the application application:
+```bash
+./gradlew bootRun
+```
+
+
 Start MySQL:
 ```bash
 docker-compose up db -d
 ```
 
-Run application:
-```bash
-./gradlew bootRun
-```
+Otherwise execute the build scirpt
+./buildScript.sh -> git bash
+bash buildScript.sh -> windows bash
+
 
 ## API Endpoints
 
