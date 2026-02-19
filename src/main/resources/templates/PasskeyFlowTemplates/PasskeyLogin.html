@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Passkey Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 Passkey Login</h2>
+        <div class="message info">
+            Click the button below to login with your passkey. You'll be prompted to select a passkey and verify with biometric or PIN.
+        </div>
+        <button onclick="loginWithPasskey()">Login with Passkey</button>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        function base64urlToUint8Array(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function uint8ArrayToBase64url(uint8Array) {
+            let binary = '';
+            uint8Array.forEach(byte => binary += String.fromCharCode(byte));
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        async function loginWithPasskey() {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="message info">Starting authentication...</div>';
+
+            try {
+                const startResponse = await fetch('/passkey/login/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!startResponse.ok) {
+                    throw new Error('Failed to start authentication');
+                }
+
+                const options = await startResponse.json();
+                
+                // The response is wrapped in publicKey object
+                const publicKeyOptions = options.publicKey || options;
+                
+                // Check if challenge exists
+                if (!publicKeyOptions.challenge) {
+                    throw new Error('No challenge in response');
+                }
+                
+                publicKeyOptions.challenge = base64urlToUint8Array(publicKeyOptions.challenge);
+                
+                if (publicKeyOptions.allowCredentials && publicKeyOptions.allowCredentials.length > 0) {
+                    publicKeyOptions.allowCredentials = publicKeyOptions.allowCredentials.map(cred => ({
+                        ...cred,
+                        id: base64urlToUint8Array(cred.id)
+                    }));
+                }
+
+                messageDiv.innerHTML = '<div class="message info">Please select your passkey and verify...</div>';
+
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyOptions
+                });
+
+                messageDiv.innerHTML = '<div class="message info">Verifying...</div>';
+
+                const credentialJSON = {
+                    id: credential.id,
+                    rawId: uint8ArrayToBase64url(new Uint8Array(credential.rawId)),
+                    response: {
+                        clientDataJSON: uint8ArrayToBase64url(new Uint8Array(credential.response.clientDataJSON)),
+                        authenticatorData: uint8ArrayToBase64url(new Uint8Array(credential.response.authenticatorData)),
+                        signature: uint8ArrayToBase64url(new Uint8Array(credential.response.signature)),
+                        userHandle: credential.response.userHandle ? 
+                            uint8ArrayToBase64url(new Uint8Array(credential.response.userHandle)) : null
+                    },
+                    clientExtensionResults: {},
+                    type: credential.type
+                };
+
+                const finishResponse = await fetch('/passkey/login/finish?' + new URLSearchParams({
+                    credential: JSON.stringify(credentialJSON)
+                }), {
+                    method: 'POST'
+                });
+
+                if (finishResponse.ok) {
+                    messageDiv.innerHTML = '<div class="message success">✓ Login successful!</div>';
+                    setTimeout(() => {
+                        window.location.href = '/secret';
+                    }, 1500);
+                } else {
+                    messageDiv.innerHTML = '<div class="message error">✗ Authentication failed</div>';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                messageDiv.innerHTML = `<div class="message error">✗ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
