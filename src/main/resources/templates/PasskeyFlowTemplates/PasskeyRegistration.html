@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Register Passkey</title>
+</head>
+<body>
+    <h2>Register Passkey</h2>
+    
+    <form id="passkeyForm">
+        <div>
+            <label>Email:</label>
+            <input type="email" id="email" th:value="${passkeyRegistrationDTO.email}" required />
+        </div>
+        <div>
+            <label>Authenticator Name (optional):</label>
+            <input type="text" id="authenticatorName" placeholder="e.g., My Phone" />
+        </div>
+        <button type="submit">Register Passkey</button>
+    </form>
+    
+    <div id="message"></div>
+    
+    <script>
+        document.getElementById('passkeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const authenticatorName = document.getElementById('authenticatorName').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                // Start registration
+                const startResponse = await fetch('/passkey/register/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const contentType = startResponse.headers.get('content-type');
+                console.log('Response content-type:', contentType);
+                
+                if (!startResponse.ok) {
+                    const errorText = await startResponse.text();
+                    console.error('Error response:', errorText);
+                    messageDiv.textContent = 'Error: ' + errorText;
+                    messageDiv.style.color = 'red';
+                    return;
+                }
+                
+                // Check if response is actually JSON
+                if (!contentType || !contentType.includes('application/json')) {
+                    const htmlResponse = await startResponse.text();
+                    console.error('Got HTML instead of JSON:', htmlResponse.substring(0, 200));
+                    messageDiv.textContent = 'Server error: Expected JSON but got HTML. Check server logs.';
+                    messageDiv.style.color = 'red';
+                    return;
+                }
+                
+                const options = await startResponse.json();
+                
+                // Convert base64url to Uint8Array
+                options.publicKey.challenge = base64urlToUint8Array(options.publicKey.challenge);
+                options.publicKey.user.id = base64urlToUint8Array(options.publicKey.user.id);
+                
+                if (options.publicKey.excludeCredentials) {
+                    options.publicKey.excludeCredentials = options.publicKey.excludeCredentials.map(cred => ({
+                        ...cred,
+                        id: base64urlToUint8Array(cred.id)
+                    }));
+                }
+                
+                // Create credential
+                const credential = await navigator.credentials.create(options);
+                
+                // Convert ArrayBuffers to base64url for transmission
+                const credentialJSON = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64Url(credential.rawId),
+                    response: {
+                        clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON),
+                        attestationObject: arrayBufferToBase64Url(credential.response.attestationObject)
+                    },
+                    clientExtensionResults: {},
+                    type: credential.type
+                };
+                
+                // Finish registration
+                const finishResponse = await fetch('/passkey/register/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        email,
+                        credential: JSON.stringify(credentialJSON),
+                        authenticatorName
+                    })
+                });
+                
+                if (finishResponse.ok) {
+                    messageDiv.textContent = 'Passkey registered successfully!';
+                    messageDiv.style.color = 'green';
+                } else {
+                    messageDiv.textContent = 'Registration failed';
+                    messageDiv.style.color = 'red';
+                }
+            } catch (error) {
+                messageDiv.textContent = 'Error: ' + error.message;
+                messageDiv.style.color = 'red';
+            }
+        });
+        
+        function base64urlToUint8Array(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+        
+        function arrayBufferToBase64Url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+    </script>
+</body>
+</html>
