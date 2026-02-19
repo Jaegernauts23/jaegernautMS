@@ -20,7 +20,7 @@ services:
       retries: 10
 
   app:
-    image: rambhargav017/myapp:latest
+    image: DOCKERACCOUNT/myapp:latest
     container_name: myapp
     depends_on:
       db:
