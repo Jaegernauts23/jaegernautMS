@@ -44,9 +44,6 @@ docker-compose.override.yml
 
 # === Deployment Files (Exclude from GitHub) ===
 .gitlab-ci.yml
-buildScript.sh
-docker-compose.yml
-Dockerfile
 
 # === Other ===
 *.swp
