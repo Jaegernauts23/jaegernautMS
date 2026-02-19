@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Building and deploying... "
+echo "Building and deploying..."
 
 
 ./gradlew clean build -x test
